@@ -40,3 +40,4 @@ generate_*.py
 config.py.old_backup
 *.old_backup
 old_scripts_archive/
+gifts_cache.json
