@@ -1,0 +1,42 @@
+# محیط و رمزها - هرگز آپلود نشن
+.env
+*.env.bak
+
+# دیتابیس
+bot.db
+*.db
+*.db-journal
+
+# بکاپ‌ها
+*.bak
+*.broken_backup
+bot.py.bak*
+shop_bot_backups/
+
+# پایتون
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# سیستم
+.DS_Store
+
+
+
+# اسکریپت‌های پچ موقت (شامل رمزهای واقعی)
+patch_*.py
+fix_*.py
+migrate_*.py
+disable_*.py
+remove_*.py
+add_*.py
+upgrade_*.py
+check_*.py
+debug_*.py
+find_*.py
+try_*.py
+generate_*.py
+config.py.old_backup
+*.old_backup
+old_scripts_archive/

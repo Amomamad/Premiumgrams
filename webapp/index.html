@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>گیفت‌های زنده</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, 'Segoe UI', Tahoma, sans-serif; background: radial-gradient(ellipse at top, #191625 0%, #100e16 55%); color: #ececf1; padding-bottom: 28px; min-height:100vh; }
+::selection { background: rgba(167,139,250,.3); }
+* { transition: background-color .25s ease, border-color .25s ease, opacity .25s ease, transform .2s cubic-bezier(.22,.61,.36,1); }
+
+.splash { position: fixed; inset: 0; background: #100e16; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.splash-logo { font-size: 46px; animation: splashPulse 1.6s ease-in-out infinite; }
+@keyframes splashPulse { 0%,100%{transform:scale(1); opacity:.9} 50%{transform:scale(1.08); opacity:1} }
+.splash-title { font-size: 14.5px; font-weight: 600; color: #d8d8e2; letter-spacing:.2px; }
+.splash-sub { font-size: 11.5px; color: #6f6c7c; }
+.splash.hide { transition: opacity .5s ease; opacity: 0; visibility: hidden; }
+
+.header { padding: 20px 18px 10px; position: sticky; top: 0; z-index: 20; background: rgba(16,14,22,.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.header-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; letter-spacing:-.2px; background: linear-gradient(90deg,#fdfdfe,#c9bdfa); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.header p { font-size: 12px; color: #82808f; margin-top: 5px; font-weight:400; }
+.fav-toggle { background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:8px 15px; font-size:12px; color:#c9c7d2; font-weight:500; }
+.fav-toggle.active { background: linear-gradient(135deg,#ff8a8a,#ee6b8f); color:#fff; border-color:transparent; box-shadow: 0 4px 14px rgba(238,107,143,.3); }
+
+.offline-banner { display:none; background: rgba(255,138,138,.1); color:#ffb3b3; text-align:center; font-size:12px; padding:10px; margin:10px 18px 0; border-radius:14px; border:1px solid rgba(255,138,138,.15); }
+.offline-banner.show { display:block; }
+
+.invite-box { margin: 14px 18px 0; background: rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); border-radius:20px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.invite-box .txt { font-size:12px; color:#a5a3ae; line-height:1.5; }
+.invite-box button { background: linear-gradient(135deg,#8b7cf6,#c9a8f5); border:none; color:#100e16; font-size:12px; font-weight:700; padding:9px 16px; border-radius:14px; white-space:nowrap; }
+
+.suggest-row { padding: 6px 18px 0; margin-top:6px; }
+.suggest-title { font-size:12.5px; color:#c9bdfa; font-weight:600; margin-bottom:10px; }
+.suggest-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:12px; scrollbar-width:none; }
+.suggest-scroll::-webkit-scrollbar { display:none; }
+.suggest-card { flex-shrink:0; width:96px; background: rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:10px; text-align:center; }
+.suggest-card img { width:100%; aspect-ratio:1; object-fit:contain; background: rgba(255,255,255,.03); border-radius:12px; margin-bottom:7px; }
+.suggest-card .n { font-size:10px; color:#b5b3bd; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.stats-bar { margin: 14px 18px 0; display:flex; gap:10px; }
+.stat-card { flex:1; background: rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.06); border-radius:18px; padding:13px 10px; text-align:center; }
+.stat-card .v { font-size:14px; font-weight:700; color:#f2f1f5; letter-spacing:-.2px; }
+.stat-card .l { font-size:9.5px; color:#7c7a89; margin-top:4px; font-weight:500; }
+
+.search-row { padding: 14px 18px 0; }
+.search-input { width:100%; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:13px 16px; color:#ececf1; font-size:13.5px; outline:none; }
+.search-input::placeholder { color:#6f6c7c; }
+.search-input:focus { border-color: rgba(167,139,250,.4); background: rgba(255,255,255,.055); }
+
+.toolbar2 { display:flex; gap:9px; padding: 12px 18px 0; }
+.tool-btn { flex-shrink:0; background: rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:9px 14px; font-size:11.5px; color:#c9c7d2; font-weight:500; }
+
+.mode-switch { display:flex; margin: 14px 18px 0; background: rgba(255,255,255,.03); border-radius:18px; padding:4px; border:1px solid rgba(255,255,255,.06); }
+.mode-btn { flex:1; text-align:center; padding:10px; font-size:12px; color:#7c7a89; border-radius:14px; font-weight:500; }
+.mode-btn.active { background: linear-gradient(135deg,#8b7cf6,#c9a8f5); color:#100e16; font-weight:700; }
+
+.filter-row { display:flex; gap:9px; padding: 14px 18px 4px; overflow-x:auto; scrollbar-width:none; }
+.filter-row::-webkit-scrollbar { display:none; }
+.filter-select { flex-shrink:0; background: rgba(255,255,255,.035); color:#a5a3ae; border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:8px 12px; font-size:11.5px; }
+
+.tabs { display: flex; gap: 9px; overflow-x: auto; padding: 14px 18px 4px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex-shrink: 0; background: rgba(255,255,255,.035); color: #a5a3ae; font-size: 12px; font-weight: 500; padding: 9px 17px; border-radius: 22px; border: 1px solid rgba(255,255,255,.06); white-space: nowrap; }
+.tab.active { background: linear-gradient(135deg, #8b7cf6, #c9a8f5); color: #100e16; font-weight:700; border-color: transparent; box-shadow: 0 4px 16px rgba(139,124,246,.25); }
+
+.pull-indicator { text-align:center; font-size:11px; color:#6f6c7c; height:0; overflow:hidden; transition:height .3s ease; }
+.pull-indicator.show { height:28px; padding-top:8px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 18px; }
+.grid.list-mode { grid-template-columns: 1fr; }
+.grid.list-mode .card { flex-direction:row; align-items:center; gap:14px; text-align:right; padding:12px; }
+.grid.list-mode .thumb { width:60px; height:60px; flex-shrink:0; margin-bottom:0; }
+.grid.list-mode .card .name, .grid.list-mode .card .price, .grid.list-mode .card .viewers { text-align:right; }
+.grid.list-mode .card { display:flex; }
+
+.card { border-radius: 22px; padding: 12px; text-align: center; cursor: pointer; opacity:0; transform: translateY(8px); animation: cardIn .5s cubic-bezier(.22,.61,.36,1) forwards; position:relative; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.05); }
+@keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+.card:active { transform: scale(.97); background: rgba(255,255,255,.045); }
+.thumb { width: 100%; aspect-ratio: 1; background: rgba(255,255,255,.03); border-radius: 16px; margin-bottom: 10px; overflow: hidden; position: relative; }
+.thumb img, .thumb canvas { width: 100%; height: 100%; object-fit: contain; }
+.card .name { font-size: 11.5px; color: #d5d3dc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; font-weight:500; }
+.card .price { font-size: 13px; font-weight: 700; color: #7ee0c3; letter-spacing:-.1px; }
+.card .viewers { font-size: 9.5px; color: #d9a86a; margin-top: 5px; font-weight:500; }
+.save-fav-btn { margin-top:9px; width:100%; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:12px; font-size:10px; color:#a5a3ae; padding:6px 8px; font-weight:500; }
+.save-fav-btn.saved { background: linear-gradient(135deg,#ff8a8a,#ee6b8f); color:#fff; border-color:transparent; }
+
+.skeleton { background: linear-gradient(90deg, rgba(255,255,255,.03) 25%, rgba(255,255,255,.06) 37%, rgba(255,255,255,.03) 63%); background-size: 400% 100%; animation: shimmer 1.6s infinite ease-in-out; }
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:0 0} }
+.empty { text-align: center; color: #6f6c7c; padding: 70px 20px; font-size: 13px; line-height:1.6; }
+.scroll-sentinel { height: 1px; }
+.load-more-spin { text-align:center; padding:16px; font-size:11.5px; color:#6f6c7c; }
+
+.collection-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:16px 18px; }
+.collection-card { background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05); border-radius:20px; padding:14px; text-align:center; cursor:pointer; }
+.collection-card:active { transform: scale(.97); }
+.collection-card .cimg { width:68%; margin:0 auto 10px; aspect-ratio:1; background: rgba(255,255,255,.03); border-radius:16px; overflow:hidden; }
+.collection-card .cimg img { width:100%; height:100%; object-fit:contain; }
+.collection-card .cname { font-size:12px; font-weight:600; color:#ececf1; margin-bottom:5px; }
+.collection-card .cfloor { font-size:10.5px; color:#7ee0c3; font-weight:500; }
+.collection-card .ccount { font-size:9.5px; color:#6f6c7c; margin-top:3px; }
+
+.floor-badge { display:inline-block; background: rgba(126,224,195,.1); color:#7ee0c3; font-size:10px; padding:5px 10px; border-radius:10px; margin-top:6px; font-weight:500; }
+.rarity-pct { display:inline-block; background: rgba(217,168,106,.12); color:#d9a86a; font-size:10.5px; padding:5px 10px; border-radius:10px; font-weight:500; }
+
+.sheet-overlay { position: fixed; inset: 0; background: rgba(8,7,12,.7); backdrop-filter: blur(4px); display: none; align-items: flex-end; z-index: 50; }
+.sheet { background: #17141f; width: 100%; border-radius: 28px 28px 0 0; padding: 24px 20px 30px; animation: slideUp .35s cubic-bezier(.22,.61,.36,1); max-height: 88vh; overflow-y:auto; border-top: 1px solid rgba(255,255,255,.08); }
+.sheet.rare-shine { animation: slideUp .35s cubic-bezier(.22,.61,.36,1), rareShine 1.4s ease .3s; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes rareShine { 0%{box-shadow:0 0 0 rgba(201,168,245,0)} 40%{box-shadow:0 0 50px rgba(201,168,245,.4)} 100%{box-shadow:0 0 0 rgba(201,168,245,0)} }
+.sheet .thumb-big { width: 100%; max-width: 210px; aspect-ratio:1; margin: 0 auto 16px; border-radius: 20px; background: rgba(255,255,255,.03); overflow: hidden; position:relative; }
+.sheet .thumb-big img, .sheet .thumb-big canvas { width:100%; height:100%; object-fit: contain; }
+.sheet-fav { position:absolute; top:10px; left:10px; font-size:18px; background: rgba(8,7,12,.5); backdrop-filter: blur(6px); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; }
+.sheet h2 { font-size: 15.5px; margin-bottom: 8px; text-align:center; font-weight:700; letter-spacing:-.1px; }
+.viewers-note { text-align:center; font-size:11px; color:#d9a86a; margin-bottom:12px; font-weight:500; }
+.attr-list { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
+.attr-item { display:flex; justify-content:space-between; background: rgba(255,255,255,.03); border-radius:14px; padding:10px 14px; font-size:12px; }
+.attr-item .k { color:#7c7a89; }
+.attr-item .v { color:#ececf1; font-weight:600; }
+.rarity-note { text-align:center; font-size:11.5px; color:#c9bdfa; margin-bottom:10px; background: rgba(139,124,246,.08); padding:8px; border-radius:12px; line-height:1.6; }
+.sheet .price-big { text-align:center; font-size: 21px; font-weight:800; color:#7ee0c3; margin: 12px 0 6px; letter-spacing:-.3px; }
+.price-live-tag { text-align:center; font-size:10px; color:#6f6c7c; margin-bottom:16px; }
+.buy-btn { width: 100%; padding: 15px; border: none; border-radius: 18px; background: linear-gradient(135deg, #8b7cf6, #c9a8f5); color: #100e16; font-size: 15px; font-weight: 700; box-shadow: 0 8px 24px rgba(139,124,246,.3); }
+.buy-btn:active:not(:disabled) { transform: scale(.97); }
+.buy-btn:disabled { opacity: .5; box-shadow:none; }
+.action-row { display:flex; gap:9px; margin-top:10px; }
+.share-btn { flex:1; padding:11px; background: rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.06); border-radius:16px; color:#c9c7d2; font-size:12px; font-weight:500; }
+.close-btn { flex:1; padding:11px; background:transparent; color:#7c7a89; border:none; font-size:12.5px; }
+
+.mygifts-overlay { position:fixed; inset:0; background: rgba(8,7,12,.7); backdrop-filter: blur(4px); z-index:60; display:none; }
+.mygifts-panel { position:absolute; top:0; left:0; right:0; bottom:0; background: #100e16; overflow-y:auto; animation: slideUp .35s cubic-bezier(.22,.61,.36,1); }
+.mygifts-header { display:flex; align-items:center; justify-content:space-between; padding:20px 18px; position:sticky; top:0; background: rgba(16,14,22,.8); backdrop-filter: blur(16px); z-index:2; }
+.mygifts-header h2 { font-size:15.5px; font-weight:700; }
+.mygifts-close { background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:8px 15px; color:#c9c7d2; font-size:12px; font-weight:500; }
+.mygift-item { display:flex; gap:14px; margin:11px 18px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05); border-radius:18px; padding:12px; align-items:center; }
+.mygift-item img { width:56px; height:56px; border-radius:14px; background: rgba(255,255,255,.03); object-fit:contain; }
+.mygift-info { flex:1; }
+.mygift-title { font-size:12.5px; font-weight:600; margin-bottom:4px; }
+.mygift-price { font-size:12px; color:#7ee0c3; margin-bottom:5px; font-weight:500; }
+.mygift-status { display:inline-block; font-size:10px; padding:4px 10px; border-radius:10px; font-weight:500; }
+.status-pending { background: rgba(217,168,106,.12); color:#d9a86a; }
+.status-approved, .status-paid { background: rgba(126,224,195,.1); color:#7ee0c3; }
+.status-rejected { background: rgba(255,138,138,.1); color:#ff9d9d; }
+.status-done { background: rgba(139,124,246,.14); color:#c9bdfa; }
+.mygift-date { font-size:10px; color:#6f6c7c; margin-top:4px; }
+.mygifts-empty { text-align:center; color:#6f6c7c; padding:70px 24px; font-size:13px; line-height:1.7; }
+
+
+.box-overlay { position:fixed; inset:0; background: rgba(8,7,12,.75); backdrop-filter: blur(4px); z-index:70; display:none; }
+.box-panel { position:absolute; top:0; left:0; right:0; bottom:0; background:#100e16; overflow-y:auto; animation: slideUp .35s cubic-bezier(.22,.61,.36,1); }
+.box-header { display:flex; align-items:center; justify-content:space-between; padding:20px 18px; position:sticky; top:0; background: rgba(16,14,22,.85); backdrop-filter: blur(16px); z-index:2; }
+.box-header h2 { font-size:15.5px; font-weight:700; }
+.box-balance { font-size:11.5px; color:#7ee0c3; margin-top:4px; }
+.box-close { background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:8px 15px; color:#c9c7d2; font-size:12px; }
+.box-card { margin:12px 18px; background: linear-gradient(160deg, rgba(139,124,246,.08), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.06); border-radius:22px; padding:18px; text-align:center; }
+.box-icon { font-size:40px; margin-bottom:8px; }
+.box-title { font-size:14.5px; font-weight:700; margin-bottom:4px; }
+.box-sub { font-size:11px; color:#7c7a89; margin-bottom:12px; }
+.box-price { font-size:19px; font-weight:800; color:#c9bdfa; margin-bottom:14px; }
+.box-open-btn { width:100%; padding:13px; border:none; border-radius:16px; background: linear-gradient(135deg,#8b7cf6,#c9a8f5); color:#100e16; font-size:14px; font-weight:700; }
+.box-open-btn:disabled { opacity:.5; }
+.box-unavailable { font-size:11px; color:#6f6c7c; padding:10px; }
+
+.reveal-overlay { position:fixed; inset:0; background:#100e16; z-index:80; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px; padding:24px; }
+.reveal-spin-box { font-size:70px; animation: spinBox 1.4s ease-in-out; }
+@keyframes spinBox { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(360deg) scale(1.2)} 100%{transform:rotate(720deg) scale(1)} }
+.reveal-result { display:none; flex-direction:column; align-items:center; gap:14px; animation: revealIn .5s cubic-bezier(.22,.61,.36,1); }
+@keyframes revealIn { from{opacity:0; transform:scale(.8)} to{opacity:1; transform:scale(1)} }
+.reveal-img { width:150px; height:150px; border-radius:24px; background: rgba(255,255,255,.04); overflow:hidden; box-shadow: 0 0 60px rgba(201,168,245,.35); }
+.reveal-img img, .reveal-img canvas { width:100%; height:100%; object-fit:contain; }
+.reveal-name { font-size:16px; font-weight:700; text-align:center; }
+.reveal-value { font-size:13px; color:#7ee0c3; }
+.reveal-note { font-size:11.5px; color:#7c7a89; text-align:center; line-height:1.7; max-width:280px; }
+.reveal-close-btn { margin-top:8px; padding:12px 28px; border:none; border-radius:16px; background: rgba(255,255,255,.06); color:#ececf1; font-size:13px; font-weight:600; }
+.box-error { color:#ff9d9d; font-size:12px; text-align:center; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="splash" id="splash">
+  <div class="splash-logo">🎁</div>
+  <div class="splash-title">گیفت‌های زنده</div>
+  <div class="splash-sub">در حال آماده‌سازی...</div>
+</div>
+
+<div class="header">
+  <div class="header-row">
+    <div><h1>🎁 گیفت‌های زنده</h1><p>لیست لحظه‌ای گیفت‌های موجود برای خرید</p></div>
+    <button class="fav-toggle" id="favToggle">❤️ علاقه‌مندی‌ها</button>
+  </div>
+</div>
+<div class="offline-banner" id="offlineBanner">📡 اتصال اینترنت رو چک کن</div>
+<div class="invite-box">
+  <div class="txt">🎁 دوستاتو دعوت کن، از خریدشون کسب درآمد کن</div>
+  <button id="inviteBtn">دریافت لینک</button>
+</div>
+<div class="suggest-row" id="suggestRow" style="display:none">
+  <div class="suggest-title">✨ پیشنهاد برای تو</div>
+  <div class="suggest-scroll" id="suggestScroll"></div>
+</div>
+<div class="search-row"><input class="search-input" id="searchInput" placeholder="🔍 جستجوی نام گیفت..."></div>
+<div class="toolbar2">
+  <button class="tool-btn" id="viewToggleBtn">▦ نمای لیستی</button>
+  <button class="tool-btn" id="myGiftsBtn">🎒 گیفت‌های من</button>
+<button class="tool-btn" id="mysteryBoxBtn">🎁 جعبه شانس</button>
+</div>
+<div class="filter-row">
+  <select class="filter-select" id="modelFilter"><option value="">همه مدل‌ها</option></select>
+  <select class="filter-select" id="backdropFilter"><option value="">همه بکدراپ‌ها</option></select>
+  <select class="filter-select" id="sortSelect">
+    <option value="default">پیش‌فرض</option>
+    <option value="cheap">ارزون‌ترین</option>
+    <option value="expensive">گرون‌ترین</option>
+    <option value="newest">جدیدترین</option>
+  </select>
+</div>
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card"><div class="v" id="statCount">-</div><div class="l">کل گیفت‌ها</div></div>
+  <div class="stat-card"><div class="v" id="statFloor">-</div><div class="l">کف قیمت</div></div>
+  <div class="stat-card"><div class="v" id="statTop">-</div><div class="l">گرون‌ترین</div></div>
+</div>
+<div class="mode-switch">
+  <div class="mode-btn active" id="modeDefault">لیست گیفت‌ها</div>
+  <div class="mode-btn" id="modeCollection">نمایش کالکشن‌ها</div>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="pull-indicator" id="pullIndicator">در حال رفرش...</div>
+<div class="grid" id="grid"></div>
+<div class="collection-grid" id="collectionGrid" style="display:none"></div>
+<div class="load-more-spin" id="loadMoreSpin" style="display:none">در حال بارگذاری بیشتر...</div>
+<div class="scroll-sentinel" id="scrollSentinel"></div>
+<div class="empty" id="empty" style="display:none">فعلاً گیفتی تو این بازه موجود نیست</div>
+
+<div class="sheet-overlay" id="overlay">
+  <div class="sheet" id="sheetBox">
+    <div class="thumb-big" id="sheetThumb"><div class="sheet-fav" id="sheetFav">🤍</div></div>
+    <h2 id="sheetName"></h2>
+    <div class="viewers-note" id="viewersNote" style="display:none"></div>
+    <div class="rarity-note" id="rarityNote" style="display:none"></div>
+    <div class="attr-list" id="attrList"></div>
+    <div class="price-big" id="sheetPrice"></div>
+    <div class="price-live-tag" id="priceLiveTag">🔄 قیمت لحظه‌ای، هر ۳۰ ثانیه به‌روزرسانی میشه</div>
+    <button class="buy-btn" id="buyBtn">🛒 خرید این گیفت</button>
+    <div class="action-row">
+      <button class="share-btn" id="shareBtn">🔗 اشتراک‌گذاری</button>
+      <button class="close-btn" id="closeBtn">بستن</button>
+    </div>
+  </div>
+</div>
+
+<div class="mygifts-overlay" id="myGiftsOverlay">
+  <div class="mygifts-panel">
+    <div class="mygifts-header">
+      <h2>🎒 گیفت‌های من</h2>
+      <button class="mygifts-close" id="myGiftsCloseBtn">بستن</button>
+    </div>
+    <div id="myGiftsList"></div>
+  </div>
+</div>
+
+<div class="box-overlay" id="boxOverlay">
+  <div class="box-panel">
+    <div class="box-header">
+      <div><h2>🎁 جعبه شانس</h2><div class="box-balance" id="boxBalanceText">موجودی: -</div></div>
+      <button class="box-close" id="boxCloseBtn">بستن</button>
+    </div>
+    <div id="boxList"></div>
+  </div>
+</div>
+
+<div class="reveal-overlay" id="revealOverlay">
+  <div class="reveal-spin-box" id="revealSpin">🎁</div>
+  <div class="reveal-result" id="revealResult">
+    <div class="reveal-img" id="revealImg"></div>
+    <div class="reveal-name" id="revealName"></div>
+    <div class="reveal-value" id="revealValue"></div>
+    <div class="reveal-note">تیم ما تا چند ساعت آینده این گیفت رو براتون ارسال می‌کنه 🎉</div>
+    <button class="reveal-close-btn" id="revealCloseBtn">باشه، متوجه شدم</button>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+function haptic(style) { try { tg?.HapticFeedback?.impactOccurred(style || 'light'); } catch(e) {} }
+function notifyHaptic(type) { try { tg?.HapticFeedback?.notificationOccurred(type || 'success'); } catch(e) {} }
+
+let allGifts = [];
+let displayGifts = [];
+let renderedCount = 0;
+const PAGE_SIZE = 20;
+let tiers = [];
+let botUsername = "premium_grams_bot";
+let activeTier = 0;
+let loadToken = 0;
+let showOnlyFav = false;
+let currentViewMode = 'default';
+let priceRefreshTimer = null;
+let currentSheetAddress = null;
+
+const FAV_KEY = 'live_gifts_favorites';
+function getFavs() { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e){ return []; } }
+function setFavs(list) { localStorage.setItem(FAV_KEY, JSON.stringify(list)); }
+function isFav(addr) { return getFavs().includes(addr); }
+function toggleFav(addr) {
+  let favs = getFavs();
+  if (favs.includes(addr)) favs = favs.filter(a => a !== addr);
+  else favs.push(addr);
+  setFavs(favs);
+  haptic('light');
+}
+
+// شمارنده‌ی «چند نفر دارن نگاه می‌کنن» - بر اساس آدرس گیفت پایدار می‌مونه تو یه سشن
+const viewerCounts = new Map();
+function getViewerCount(addr) {
+  if (!viewerCounts.has(addr)) {
+    let h = 0;
+    for (let i = 0; i < addr.length; i++) h = (h * 31 + addr.charCodeAt(i)) % 97;
+    viewerCounts.set(addr, 3 + (h % 28));
+  }
+  return viewerCounts.get(addr);
+}
+
+// رنگ‌بندی داینامیک بر اساس Backdrop
+const backdropColorCache = new Map();
+function backdropGradient(backdrop) {
+  if (!backdrop) return 'linear-gradient(180deg, #181b22, #12141a)';
+  if (backdropColorCache.has(backdrop)) return backdropColorCache.get(backdrop);
+  let h = 0;
+  for (let i = 0; i < backdrop.length; i++) h = (h * 37 + backdrop.charCodeAt(i)) % 360;
+  const grad = `linear-gradient(160deg, hsl(${h},35%,16%), #12141a)`;
+  backdropColorCache.set(backdrop, grad);
+  return grad;
+}
+function backdropBorder(backdrop) {
+  if (!backdrop) return '#22252d';
+  let h = 0;
+  for (let i = 0; i < backdrop.length; i++) h = (h * 37 + backdrop.charCodeAt(i)) % 360;
+  return `hsl(${h},40%,28%)`;
+}
+
+const animDataCache = new Map();
+const liveAnims = new Map();
+const MAX_CONCURRENT = 4;
+let loadQueue = [];
+let activeLoads = 0;
+
+function fmtMoney(n) { return n ? n.toLocaleString('fa-IR') + " تومان" : "نامشخص"; }
+
+function renderSkeleton() {
+  document.getElementById('grid').innerHTML = Array(6).fill(
+    '<div class="card" style="animation:none;opacity:1"><div class="skeleton" style="aspect-ratio:1;border-radius:12px;margin-bottom:8px"></div><div class="skeleton" style="height:11px;border-radius:4px;margin-bottom:5px"></div><div class="skeleton" style="height:13px;width:60%;border-radius:4px;margin:0 auto"></div></div>'
+  ).join('');
+}
+
+function renderTabs() {
+  document.getElementById('tabs').innerHTML = tiers.map((t, i) =>
+    `<div class="tab ${i===activeTier?'active':''}" data-i="${i}">${t.label}</div>`).join('');
+  document.querySelectorAll('.tab').forEach(el => {
+    el.onclick = () => { haptic('light'); activeTier = +el.dataset.i; renderTabs(); loadTierGifts().then(() => { saveUiState(); renderSuggestions(); switchModeUI(currentViewMode); }); };
+  });
+}
+
+async function loadTierGifts() {
+  const myToken = ++loadToken;
+  renderSkeleton();
+  document.getElementById('empty').style.display = 'none';
+  const data = await fetch('/api/live-gifts?tier=' + activeTier).then(r => r.json());
+  if (myToken !== loadToken) return;
+  if (data.updating) {
+    document.getElementById('grid').innerHTML = '';
+    const empty = document.getElementById('empty');
+    empty.textContent = 'در حال آماده‌سازی لیست گیفت‌ها، چند دقیقه دیگه دوباره سر بزن...';
+    empty.style.display = 'block';
+    return;
+  }
+  allGifts = data.gifts || [];
+  populateFilters();
+  applyFiltersAndRender();
+  renderSuggestions();
+  renderStats();
+  renderCollections();
+}
+
+function renderStats() {
+  if (!allGifts.length) return;
+  const prices = allGifts.map(g => g.price_toman).filter(Boolean);
+  document.getElementById('statCount').textContent = allGifts.length.toLocaleString('fa-IR');
+  document.getElementById('statFloor').textContent = prices.length ? fmtMoney(Math.min(...prices)) : '-';
+  document.getElementById('statTop').textContent = prices.length ? fmtMoney(Math.max(...prices)) : '-';
+}
+
+function renderCollections() {
+  const grid = document.getElementById('collectionGrid');
+  const groups = {};
+  allGifts.forEach(g => {
+    const key = g.collection || g.name;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(g);
+  });
+  const entries = Object.entries(groups).sort((a,b) => b[1].length - a[1].length);
+  grid.innerHTML = entries.map(([name, items]) => {
+    const floor = Math.min(...items.map(x => x.price_toman).filter(Boolean));
+    const sample = items[0];
+    return `
+    <div class="collection-card" data-collection="${name}">
+      <div class="cimg"><img src="${sample.image || ''}" onerror="this.style.opacity=0.3"></div>
+      <div class="cname">${name}</div>
+      <div class="cfloor">کف: ${fmtMoney(floor)}</div>
+      <div class="ccount">${items.length} عدد موجود</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.collection-card').forEach(el => {
+    el.onclick = () => {
+      haptic('light');
+      document.getElementById('searchInput').value = el.dataset.collection;
+      switchModeUI('default');
+      applyFiltersAndRender();
+    };
+  });
+}
+
+function switchModeUI(mode) {
+  currentViewMode = mode;
+  document.getElementById('modeDefault').classList.toggle('active', mode === 'default');
+  document.getElementById('modeCollection').classList.toggle('active', mode === 'collection');
+  const isCollection = mode === 'collection';
+  document.getElementById('grid').style.display = isCollection ? 'none' : 'grid';
+  document.getElementById('collectionGrid').style.display = isCollection ? 'grid' : 'none';
+}
+document.getElementById('modeDefault').onclick = () => { haptic('light'); switchModeUI('default'); saveUiState(); };
+document.getElementById('modeCollection').onclick = () => { haptic('light'); switchModeUI('collection'); saveUiState(); };
+
+function populateFilters() {
+  const models = [...new Set(allGifts.map(g => g.model).filter(Boolean))].sort();
+  const backdrops = [...new Set(allGifts.map(g => g.backdrop).filter(Boolean))].sort();
+  const modelSel = document.getElementById('modelFilter');
+  const backSel = document.getElementById('backdropFilter');
+  const curModel = modelSel.value, curBack = backSel.value;
+  modelSel.innerHTML = '<option value="">همه مدل‌ها</option>' + models.map(m => `<option value="${m}">${m}</option>`).join('');
+  backSel.innerHTML = '<option value="">همه بکدراپ‌ها</option>' + backdrops.map(b => `<option value="${b}">${b}</option>`).join('');
+  modelSel.value = models.includes(curModel) ? curModel : '';
+  backSel.value = backdrops.includes(curBack) ? curBack : '';
+}
+
+let searchToken = 0;
+let searchResultsCache = null;
+
+async function applyFiltersAndRender() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const modelF = document.getElementById('modelFilter').value;
+  const backF = document.getElementById('backdropFilter').value;
+  const sortV = document.getElementById('sortSelect').value;
+
+  let list;
+  if (q && q.length >= 2) {
+    const myToken = ++searchToken;
+    document.getElementById('empty').style.display = 'none';
+    renderSkeleton();
+    try {
+      const data = await fetch('/api/search-gifts?q=' + encodeURIComponent(q)).then(r => r.json());
+      if (myToken !== searchToken) return;
+      list = data.gifts || [];
+      searchResultsCache = list;
+    } catch (e) {
+      if (myToken !== searchToken) return;
+      list = [];
+    }
+  } else {
+    list = allGifts.slice();
+  }
+
+  if (showOnlyFav) { const favs = getFavs(); list = list.filter(g => favs.includes(g.address)); }
+  if (modelF) list = list.filter(g => g.model === modelF);
+  if (backF) list = list.filter(g => g.backdrop === backF);
+
+  if (sortV === 'cheap') list.sort((a,b) => a.price_toman - b.price_toman);
+  else if (sortV === 'expensive') list.sort((a,b) => b.price_toman - a.price_toman);
+  else if (sortV === 'newest') list.sort((a,b) => (b.listed_at||0) - (a.listed_at||0));
+  else if (!q) list = shuffleArray(list);
+
+  displayGifts = list;
+  renderedCount = 0;
+  document.getElementById('grid').innerHTML = '';
+  renderNextBatch();
+}
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function fetchAnimData(stickerId) {
+  if (animDataCache.has(stickerId)) return animDataCache.get(stickerId);
+  const buf = await fetch(`/sticker/${stickerId}.tgs`).then(r => r.arrayBuffer());
+  const json = pako.inflate(new Uint8Array(buf), { to: 'string' });
+  const data = JSON.parse(json);
+  animDataCache.set(stickerId, data);
+  return data;
+}
+
+function queueLoad(container, stickerId) { loadQueue.push({ container, stickerId }); pumpQueue(); }
+function pumpQueue() {
+  while (activeLoads < MAX_CONCURRENT && loadQueue.length) {
+    const job = loadQueue.shift();
+    activeLoads++;
+    fetchAnimData(job.stickerId).then(data => {
+      if (!document.body.contains(job.container)) return;
+      const anim = lottie.loadAnimation({ container: job.container, renderer: 'canvas', loop: true, autoplay: true, animationData: data, rendererSettings: { clearCanvas: true, progressiveLoad: true } });
+      anim.setSubframe(false);
+      liveAnims.set(job.container, anim);
+    }).catch(() => {}).finally(() => { activeLoads--; pumpQueue(); });
+  }
+}
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    const el = entry.target;
+    const sticker = el.dataset.sticker;
+    if (!sticker) return;
+    if (entry.isIntersecting) {
+      if (!el.dataset.loaded) { el.dataset.loaded = '1'; queueLoad(el, sticker); }
+      const anim = liveAnims.get(el);
+      if (anim) anim.play();
+    } else {
+      const anim = liveAnims.get(el);
+      if (anim) anim.pause();
+    }
+  });
+}, { threshold: 0.15 });
+
+const scrollIo = new IntersectionObserver(entries => {
+  entries.forEach(entry => { if (entry.isIntersecting) renderNextBatch(); });
+}, { threshold: 0.01 });
+scrollIo.observe(document.getElementById('scrollSentinel'));
+
+function destroyGridAnims() { liveAnims.forEach(anim => anim.destroy()); liveAnims.clear(); loadQueue = []; }
+
+function computeRarity(g) {
+  if (!g.model) return null;
+  return allGifts.filter(x => x.model === g.model).length;
+}
+
+function cardHtml(g, idx) {
+  const grad = backdropGradient(g.backdrop);
+  const border = backdropBorder(g.backdrop);
+  const viewers = getViewerCount(g.address);
+  const saved = isFav(g.address);
+  return `
+    <div class="card" data-addr="${g.address}" style="animation-delay:${Math.min(idx*35,300)}ms;background:${grad};border-color:${border}">
+      <div class="thumb" data-sticker="${g.sticker || ''}"><img src="${g.image || ''}" loading="lazy" onerror="this.style.opacity=0.3"></div>
+      <div class="name">${g.name}</div>
+      <div class="price">${fmtMoney(g.price_toman)}</div>
+      <div class="viewers">👀 ${viewers} نفر الان نگاه می‌کنن</div>
+      <button class="save-fav-btn ${saved?'saved':''}" data-fav-addr="${g.address}">${saved?'✓ ذخیره شد':'+ ذخیره در علاقه‌مندی'}</button>
+    </div>`;
+}
+
+function renderNextBatch() {
+  const empty = document.getElementById('empty');
+  if (!displayGifts.length) {
+    document.getElementById('grid').innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('loadMoreSpin').style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  if (renderedCount >= displayGifts.length) {
+    document.getElementById('loadMoreSpin').style.display = 'none';
+    return;
+  }
+  const batch = displayGifts.slice(renderedCount, renderedCount + PAGE_SIZE);
+  const grid = document.getElementById('grid');
+  const wrap = document.createElement('div');
+  wrap.innerHTML = batch.map((g, i) => cardHtml(g, i)).join('');
+  Array.from(wrap.children).forEach(cardEl => {
+    grid.appendChild(cardEl);
+    const addr = cardEl.dataset.addr;
+    const favBtn = cardEl.querySelector('.save-fav-btn');
+    favBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleFav(addr);
+      const nowSaved = isFav(addr);
+      favBtn.textContent = nowSaved ? '✓ ذخیره شد' : '+ ذخیره در علاقه‌مندی';
+      favBtn.classList.toggle('saved', nowSaved);
+      if (showOnlyFav) applyFiltersAndRender();
+    };
+    cardEl.onclick = () => { haptic('light'); openSheet(addr); };
+    io.observe(cardEl.querySelector('.thumb'));
+  });
+  renderedCount += batch.length;
+  document.getElementById('loadMoreSpin').style.display = renderedCount < displayGifts.length ? 'block' : 'none';
+}
+
+function openSheet(address) {
+  const g = allGifts.find(x => x.address === address);
+  if (!g) return;
+  currentSheetAddress = address;
+  const thumbBig = document.getElementById('sheetThumb');
+  thumbBig.innerHTML = `<img src="${g.image || ''}"><div class="sheet-fav" id="sheetFav">${isFav(address)?'❤️':'🤍'}</div>`;
+  document.getElementById('sheetFav').onclick = () => {
+    toggleFav(address);
+    document.getElementById('sheetFav').textContent = isFav(address) ? '❤️' : '🤍';
+  };
+  document.getElementById('sheetName').textContent = g.name;
+  document.getElementById('sheetPrice').textContent = fmtMoney(g.price_toman);
+
+  const viewers = getViewerCount(g.address);
+  document.getElementById('viewersNote').style.display = 'block';
+  document.getElementById('viewersNote').textContent = `👀 ${viewers} نفر دیگه همین الان دارن این گیفت رو می‌بینن`;
+
+  const attrList = document.getElementById('attrList');
+  const rows = [];
+  if (g.model) rows.push(`<div class="attr-item"><span class="k">🎨 مدل</span><span class="v">${g.model}</span></div>`);
+  if (g.backdrop) rows.push(`<div class="attr-item"><span class="k">🖼 بکدراپ</span><span class="v">${g.backdrop}</span></div>`);
+  if (g.symbol) rows.push(`<div class="attr-item"><span class="k">✨ نماد</span><span class="v">${g.symbol}</span></div>`);
+  rows.push(`<div class="attr-item"><span class="k">💰 قیمت پایه</span><span class="v">${g.min_ton} تون</span></div>`);
+  attrList.innerHTML = rows.join('');
+
+  const rarity = computeRarity(g);
+  const rarityNote = document.getElementById('rarityNote');
+  const sheetBox = document.getElementById('sheetBox');
+  const isRare = rarity && rarity <= 20;
+  if (rarity) {
+    const pct = ((rarity / allGifts.length) * 100).toFixed(1);
+    rarityNote.style.display = 'block';
+    rarityNote.innerHTML = isRare
+      ? `💎 فقط ${rarity} تا از مدل «${g.model}» تو این بازه موجوده <span class="rarity-pct">${pct}٪ کمیاب</span>`
+      : `<span class="rarity-pct">${pct}٪ از این بازه هم‌مدل هستن</span>`;
+  } else {
+    rarityNote.style.display = 'none';
+  }
+  if (isRare) { sheetBox.classList.add('rare-shine'); notifyHaptic('success'); }
+  else { sheetBox.classList.remove('rare-shine'); }
+
+  const collFloor = allGifts.filter(x => x.collection === g.collection).map(x => x.price_toman).filter(Boolean);
+  if (collFloor.length) {
+    const floorTag = document.createElement('div');
+    floorTag.className = 'floor-badge';
+    floorTag.textContent = `📊 کف قیمت کالکشن: ${fmtMoney(Math.min(...collFloor))}`;
+    rarityNote.after(floorTag);
+    if (rarityNote.nextElementSibling && rarityNote.nextElementSibling.classList.contains('floor-badge') && rarityNote.nextElementSibling !== floorTag) {
+      rarityNote.nextElementSibling.remove();
+    }
+  }
+
+  document.getElementById('overlay').style.display = 'flex';
+  if (g.sticker) {
+    fetchAnimData(g.sticker).then(data => {
+      const box = document.createElement('div');
+      box.style.width='100%'; box.style.height='100%'; box.style.position='absolute'; box.style.inset='0';
+      thumbBig.prepend(box);
+      lottie.loadAnimation({ container: box, renderer: 'canvas', loop: true, autoplay: true, animationData: data });
+    }).catch(() => {});
+  }
+
+  const buyBtn = document.getElementById('buyBtn');
+  buyBtn.disabled = false;
+  buyBtn.textContent = '🛒 خرید این گیفت';
+  buyBtn.onclick = () => {
+    haptic('medium');
+    buyBtn.disabled = true;
+    buyBtn.textContent = 'در حال انتقال به پرداخت...';
+    const link = `https://t.me/${botUsername}?start=buylive_${address}`;
+    if (tg && tg.openTelegramLink) { tg.openTelegramLink(link); setTimeout(() => tg.close(), 150); }
+    else { window.open(link, '_blank'); }
+  };
+
+  document.getElementById('shareBtn').onclick = () => {
+    haptic('light');
+    const shareText = `این گیفت رو ببین: ${g.name}`;
+    const link = `https://t.me/${botUsername}?start=buylive_${address}`;
+    if (tg && tg.switchInlineQuery) { try { tg.switchInlineQuery(shareText, ['users','groups']); return; } catch(e) {} }
+    if (navigator.share) { navigator.share({ title: g.name, text: shareText, url: link }).catch(()=>{}); }
+    else { navigator.clipboard?.writeText(link); }
+  };
+
+  clearInterval(priceRefreshTimer);
+  priceRefreshTimer = setInterval(refreshOpenPrice, 30000);
+}
+
+async function refreshOpenPrice() {
+  if (!currentSheetAddress || document.getElementById('overlay').style.display === 'none') {
+    clearInterval(priceRefreshTimer);
+    return;
+  }
+  try {
+    const data = await fetch('/api/live-gifts?tier=' + activeTier).then(r => r.json());
+    if (data.updating) return;
+    const fresh = (data.gifts || []).find(x => x.address === currentSheetAddress);
+    if (fresh) {
+      document.getElementById('sheetPrice').textContent = fmtMoney(fresh.price_toman);
+      const idx = allGifts.findIndex(x => x.address === currentSheetAddress);
+      if (idx >= 0) allGifts[idx].price_toman = fresh.price_toman;
+    }
+  } catch (e) {}
+}
+
+document.getElementById('closeBtn').onclick = () => { document.getElementById('overlay').style.display = 'none'; clearInterval(priceRefreshTimer); };
+document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') { e.target.style.display = 'none'; clearInterval(priceRefreshTimer); } };
+document.getElementById('searchInput').oninput = () => applyFiltersAndRender();
+document.getElementById('modelFilter').onchange = () => applyFiltersAndRender();
+document.getElementById('backdropFilter').onchange = () => applyFiltersAndRender();
+document.getElementById('sortSelect').onchange = () => applyFiltersAndRender();
+document.getElementById('favToggle').onclick = () => {
+  haptic('light');
+  showOnlyFav = !showOnlyFav;
+  document.getElementById('favToggle').classList.toggle('active', showOnlyFav);
+  applyFiltersAndRender();
+};
+
+let touchStartY = 0, pulling = false;
+document.addEventListener('touchstart', e => { if (window.scrollY === 0) touchStartY = e.touches[0].clientY; }, {passive:true});
+document.addEventListener('touchmove', e => {
+  if (window.scrollY === 0 && touchStartY) {
+    const diff = e.touches[0].clientY - touchStartY;
+    if (diff > 60 && !pulling) { pulling = true; document.getElementById('pullIndicator').classList.add('show'); }
+  }
+}, {passive:true});
+document.addEventListener('touchend', () => {
+  if (pulling) { pulling = false; haptic('medium'); loadTierGifts().finally(() => document.getElementById('pullIndicator').classList.remove('show')); }
+  touchStartY = 0;
+}, {passive:true});
+
+// --- یادآوری آخرین تب/فیلتر ---
+const PREF_KEY = 'live_gifts_last_state';
+function saveUiState() {
+  localStorage.setItem(PREF_KEY, JSON.stringify({
+    tier: activeTier,
+    model: document.getElementById('modelFilter').value,
+    backdrop: document.getElementById('backdropFilter').value,
+    sort: document.getElementById('sortSelect').value,
+    listMode: document.getElementById('grid').classList.contains('list-mode'),
+    viewMode: currentViewMode,
+  }));
+}
+function loadUiState() {
+  try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+// --- نمای گرید/لیست ---
+document.getElementById('viewToggleBtn').onclick = () => {
+  haptic('light');
+  const grid = document.getElementById('grid');
+  const listMode = grid.classList.toggle('list-mode');
+  document.getElementById('viewToggleBtn').textContent = listMode ? '▦ نمای گرید' : '▦ نمای لیستی';
+  saveUiState();
+};
+
+// --- آفلاین/آنلاین ---
+function updateOnlineStatus() {
+  document.getElementById('offlineBanner').classList.toggle('show', !navigator.onLine);
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// --- لینک دعوت ---
+document.getElementById('inviteBtn').onclick = () => {
+  haptic('light');
+  const uid = tg?.initDataUnsafe?.user?.id;
+  if (!uid) { alert('برای گرفتن لینک دعوت باید از داخل تلگرام وارد بشی'); return; }
+  const link = `https://t.me/${botUsername}?start=ref_${uid}`;
+  if (navigator.share) { navigator.share({ title: 'دعوت به فروشگاه', text: 'از این ربات خرید کن:', url: link }).catch(()=>{}); }
+  else { navigator.clipboard?.writeText(link); alert('لینک دعوت کپی شد'); }
+};
+
+// --- پیشنهاد بر اساس سلیقه ---
+function renderSuggestions() {
+  const favs = getFavs();
+  const row = document.getElementById('suggestRow');
+  if (!favs.length) { row.style.display = 'none'; return; }
+  const favGifts = allGifts.filter(g => favs.includes(g.address));
+  const likedModels = new Set(favGifts.map(g => g.model).filter(Boolean));
+  const likedBackdrops = new Set(favGifts.map(g => g.backdrop).filter(Boolean));
+  const suggestions = allGifts.filter(g =>
+    !favs.includes(g.address) && (likedModels.has(g.model) || likedBackdrops.has(g.backdrop))
+  ).slice(0, 10);
+  if (!suggestions.length) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+  document.getElementById('suggestScroll').innerHTML = suggestions.map(g => `
+    <div class="suggest-card" data-addr="${g.address}">
+      <img src="${g.image || ''}" onerror="this.style.opacity=0.3">
+      <div class="n">${g.name}</div>
+    </div>`).join('');
+  document.querySelectorAll('.suggest-card').forEach(el => {
+    el.onclick = () => { haptic('light'); openSheet(el.dataset.addr); };
+  });
+}
+
+const STATUS_LABELS = {
+  pending: 'در انتظار پرداخت',
+  approved: 'پرداخت تایید شد',
+  paid: 'پرداخت شد',
+  rejected: 'رد شده',
+  done: 'تحویل داده شد',
+};
+function statusClass(s) { return 'status-' + (s || 'pending'); }
+function statusLabel(s) { return STATUS_LABELS[s] || s || '-'; }
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  return d.toLocaleDateString('fa-IR');
+}
+
+async function openMyGifts() {
+  haptic('light');
+  document.getElementById('myGiftsOverlay').style.display = 'block';
+  const listEl = document.getElementById('myGiftsList');
+  listEl.innerHTML = '<div class="mygifts-empty">در حال بارگذاری...</div>';
+  if (!tg || !tg.initData) {
+    listEl.innerHTML = '<div class="mygifts-empty">برای دیدن گیفت‌های خریداری‌شده باید از داخل تلگرام وارد بشی</div>';
+    return;
+  }
+  try {
+    const data = await fetch('/api/my-gifts?init_data=' + encodeURIComponent(tg.initData)).then(r => r.json());
+    const gifts = data.gifts || [];
+    if (!gifts.length) {
+      listEl.innerHTML = '<div class="mygifts-empty">هنوز هیچ گیفتی از این بخش نخریدی 🙁</div>';
+      return;
+    }
+    listEl.innerHTML = gifts.map(g => `
+      <div class="mygift-item">
+        <img src="${g.image || ''}" onerror="this.style.opacity=0.3">
+        <div class="mygift-info">
+          <div class="mygift-title">${g.title || 'گیفت ویژه'}</div>
+          <div class="mygift-price">${fmtMoney(g.price_toman)}</div>
+          <span class="mygift-status ${statusClass(g.status)}">${statusLabel(g.status)}</span>
+          <div class="mygift-date">${fmtDate(g.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div class="mygifts-empty">مشکلی تو دریافت لیست پیش اومد، دوباره امتحان کن</div>';
+  }
+}
+async function openMysteryBox() {
+  haptic('light');
+  if (!tg || !tg.initData) { alert('برای باز کردن جعبه باید از داخل تلگرام وارد بشی'); return; }
+  document.getElementById('boxOverlay').style.display = 'block';
+  const listEl = document.getElementById('boxList');
+  listEl.innerHTML = '<div class="box-error" style="color:#7c7a89">در حال بارگذاری...</div>';
+
+  try {
+    const balData = await fetch('/api/my-balance?init_data=' + encodeURIComponent(tg.initData)).then(r => r.json());
+    document.getElementById('boxBalanceText').textContent = 'موجودی: ' + fmtMoney(balData.balance || 0);
+  } catch(e) {}
+
+  try {
+    const data = await fetch('/api/boxes').then(r => r.json());
+    const boxes = data.boxes || [];
+    listEl.innerHTML = boxes.map(b => `
+      <div class="box-card">
+        <div class="box-icon">${b.label.split(' ')[0]}</div>
+        <div class="box-title">${b.label.replace(/^\S+\s/, '')}</div>
+        <div class="box-sub">${b.sub}</div>
+        ${b.available
+          ? `<div class="box-price">${fmtMoney(b.price_toman)}</div><button class="box-open-btn" data-box="${b.key}">باز کردن جعبه</button>`
+          : `<div class="box-unavailable">فعلاً این جعبه موجود نیست، بعداً دوباره سر بزن</div>`}
+      </div>`).join('');
+    document.querySelectorAll('.box-open-btn').forEach(btn => {
+      btn.onclick = () => openBox(btn.dataset.box, btn);
+    });
+  } catch (e) {
+    listEl.innerHTML = '<div class="box-error">مشکلی پیش اومد، دوباره امتحان کن</div>';
+  }
+}
+
+async function openBox(boxKey, btnEl) {
+  haptic('medium');
+  btnEl.disabled = true;
+  btnEl.textContent = 'در حال باز کردن...';
+
+  document.getElementById('boxOverlay').style.display = 'none';
+  document.getElementById('revealOverlay').style.display = 'flex';
+  document.getElementById('revealSpin').style.display = 'block';
+  document.getElementById('revealResult').style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/open-box', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: tg.initData, box_key: boxKey }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('revealOverlay').style.display = 'none';
+      alert(data.error || 'مشکلی پیش اومد');
+      btnEl.disabled = false;
+      btnEl.textContent = 'باز کردن جعبه';
+      return;
+    }
+
+    setTimeout(() => {
+      notifyHaptic('success');
+      document.getElementById('revealSpin').style.display = 'none';
+      const g = data.gift;
+      const imgBox = document.getElementById('revealImg');
+      imgBox.innerHTML = `<img src="${g.image || ''}" onerror="this.style.opacity=0.3">`;
+      document.getElementById('revealName').textContent = g.name;
+      document.getElementById('revealValue').textContent = '🎉 ارزش این گیفت: ' + fmtMoney(g.price_toman);
+      document.getElementById('revealResult').style.display = 'flex';
+      if (g.sticker) {
+        fetchAnimData(g.sticker).then(anim => {
+          const box = document.createElement('div');
+          box.style.width='100%'; box.style.height='100%'; box.style.position='absolute'; box.style.inset='0';
+          imgBox.prepend(box);
+          lottie.loadAnimation({ container: box, renderer: 'canvas', loop: true, autoplay: true, animationData: anim });
+        }).catch(()=>{});
+      }
+    }, 1400);
+  } catch (e) {
+    document.getElementById('revealOverlay').style.display = 'none';
+    alert('مشکلی تو ارتباط با سرور پیش اومد');
+    btnEl.disabled = false;
+    btnEl.textContent = 'باز کردن جعبه';
+  }
+}
+
+document.getElementById('mysteryBoxBtn').onclick = openMysteryBox;
+document.getElementById('boxCloseBtn').onclick = () => { document.getElementById('boxOverlay').style.display = 'none'; };
+document.getElementById('boxOverlay').onclick = (e) => { if (e.target.id === 'boxOverlay') e.target.style.display = 'none'; };
+document.getElementById('revealCloseBtn').onclick = () => { document.getElementById('revealOverlay').style.display = 'none'; };
+
+document.getElementById('myGiftsBtn').onclick = openMyGifts;
+document.getElementById('myGiftsCloseBtn').onclick = () => { document.getElementById('myGiftsOverlay').style.display = 'none'; };
+document.getElementById('myGiftsOverlay').onclick = (e) => { if (e.target.id === 'myGiftsOverlay') e.target.style.display = 'none'; };
+
+async function load() {
+  renderSkeleton();
+  const cfg = await fetch('/api/config').then(r => r.json());
+  tiers = cfg.tiers; botUsername = cfg.bot_username;
+
+  const saved = loadUiState();
+  if (typeof saved.tier === 'number' && tiers[saved.tier]) activeTier = saved.tier;
+  renderTabs();
+  await loadTierGifts();
+
+  if (saved.model) document.getElementById('modelFilter').value = saved.model;
+  if (saved.backdrop) document.getElementById('backdropFilter').value = saved.backdrop;
+  if (saved.sort) document.getElementById('sortSelect').value = saved.sort;
+  if (saved.model || saved.backdrop || saved.sort) applyFiltersAndRender();
+  if (saved.listMode) { document.getElementById('grid').classList.add('list-mode'); document.getElementById('viewToggleBtn').textContent = '▦ نمای گرید'; }
+  if (saved.viewMode) switchModeUI(saved.viewMode);
+
+  renderSuggestions();
+
+  const splash = document.getElementById('splash');
+  setTimeout(() => { splash.classList.add('hide'); setTimeout(() => splash.remove(), 450); }, 400);
+}
+
+['modelFilter','backdropFilter','sortSelect'].forEach(id => {
+  document.getElementById(id).addEventListener('change', saveUiState);
+});
+document.querySelectorAll('.tab').length; // no-op, tabs saved via click handler below
+
+load();
+</script>
+</body>
+</html>
